@@ -1,1 +1,1 @@
-This project entails the code needed to operate the Physical Artefact for Well-being Support Pneumatic System
+This project entails the code and operational procedures needed to operate the Physical Artefact for Well-being Support Pneumatic System
