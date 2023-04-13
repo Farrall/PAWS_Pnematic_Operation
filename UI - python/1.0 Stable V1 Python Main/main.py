@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
+#test
+
 ser = serial.Serial('COM3')
 ser.flushInput()
 
