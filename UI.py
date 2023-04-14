@@ -180,7 +180,7 @@ def makeActivityScreen(root, mode, duration):
     statusLabel = Label(activityScreen, text="Status - Device Running")
     statusLabel.place(x=31, y=53)
     canvas.create_oval(379, 55, 409, 85, outline="#797979",
-                       fill="#95F204", width=1)
+                       fill="#95F204", width=1, tags="status")
 
     # Ball visualisation section
     ballVisLabel = Label(activityScreen, text="Ball Visualisation")
@@ -212,7 +212,7 @@ def makeActivityScreen(root, mode, duration):
                          style="ExtraSmall.TLabel")
     maxTimeLabel.place(x=870, y=658)
 
-    pauseButton = Button(activityScreen, image=pauseIcon, command=lambda: pauseFunction(pauseButton))
+    pauseButton = Button(activityScreen, image=pauseIcon, command=lambda: pauseFunction(pauseButton, canvas, statusLabel))
     pauseButton.place(x=548, y=553, width=62, height=54)
 
     # Pressure bar section
@@ -284,13 +284,17 @@ def incrementTime():
         #root.after_cancel(timer)
         pass
 
-def pauseFunction(button):
+def pauseFunction(button, canvas, statusLabel):
     if running.get():
         running.set(False)
         button.configure(image=playIcon)
+        canvas.itemconfigure("status", fill="#D9001B")
+        statusLabel.configure(text="Status - Device Paused")
     else:
         running.set(True)
         button.configure(image=pauseIcon)
+        canvas.itemconfigure("status", fill="#95F204")
+        statusLabel.configure(text="Status - Device Running")
         incrementTime()
 
 # def animateCircle(canvas):
