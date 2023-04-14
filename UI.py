@@ -2,19 +2,25 @@ from tkinter import *
 from tkinter.ttk import *
 from PIL import Image, ImageTk
 import serial
+import time
 
 windowWidth = 1158
 windowHeight = 740
-operatingMode = ""
-duration = 0
 
-#ser = serial.Serial('COM3')
-#ser.flushInput()
+# ser = serial.Serial('COM3')
+# ser.flushInput()
 
 # Main menu window
 root = Tk()
 root.geometry("1158x740+350+150")
 root.resizable(False, False)
+
+# global variables which need to get updated while running
+maxTime = StringVar(root)
+currentTime = StringVar(root)
+maxSeconds = IntVar(root, value=0)
+elapsedS = IntVar(root, value=0)
+running = BooleanVar(root, value=False)
 
 # Styles to change fonts / sizes
 style = Style()
@@ -25,13 +31,20 @@ style.configure("SmallBold.TLabel", font=("Arial", 17, "bold"))
 style.configure("ExtraSmall.TLabel", font=("Arial", 13, "bold"))
 
 # Images for the screens
-chestImg = ImageTk.PhotoImage(Image.open("PAWS_Pnematic_Operation/assets/chest.png"))
-biopacIcon = ImageTk.PhotoImage(Image.open("PAWS_Pnematic_Operation/assets/plugBlack.png"))
-airIcon = ImageTk.PhotoImage(Image.open("PAWS_Pnematic_Operation/assets/plugGrey.png"))
-strapIcon = ImageTk.PhotoImage(Image.open("PAWS_Pnematic_Operation/assets/blutoothBlack.png"))
-cogwheelIcon = ImageTk.PhotoImage(Image.open("PAWS_Pnematic_Operation/assets/cogwheel.png"))
-pauseIcon = ImageTk.PhotoImage(Image.open("PAWS_Pnematic_Operation/assets/pause.png"))
-playIcon = ImageTk.PhotoImage(Image.open("PAWS_Pnematic_Operation/assets/play.png"))
+chestImg = ImageTk.PhotoImage(Image.open(
+    "PAWS_Pnematic_Operation/assets/chest.png"))
+biopacIcon = ImageTk.PhotoImage(Image.open(
+    "PAWS_Pnematic_Operation/assets/plugBlack.png"))
+airIcon = ImageTk.PhotoImage(Image.open(
+    "PAWS_Pnematic_Operation/assets/plugGrey.png"))
+strapIcon = ImageTk.PhotoImage(Image.open(
+    "PAWS_Pnematic_Operation/assets/blutoothBlack.png"))
+cogwheelIcon = ImageTk.PhotoImage(Image.open(
+    "PAWS_Pnematic_Operation/assets/cogwheel.png"))
+pauseIcon = ImageTk.PhotoImage(Image.open(
+    "PAWS_Pnematic_Operation/assets/pause.png"))
+playIcon = ImageTk.PhotoImage(Image.open(
+    "PAWS_Pnematic_Operation/assets/play.png"))
 
 
 def makeMenuScreen(root):
@@ -146,11 +159,19 @@ def makeSetupScreen(root):
     chestContainer.place(x=927, y=404)
 
     nextButton = Button(setupScreen, text="NEXT",
-                        command=lambda: goToActivityScreen(root, setupScreen, canvas))
+                        command=lambda: goToActivityScreen(root, setupScreen, canvas, modeBox.get(), durationBox.current()))
     nextButton.place(x=889, y=653, width=227, height=65)
 
 
-def makeActivityScreen(root):
+def makeActivityScreen(root, mode, duration):
+    if mode == "Standard":
+        # ser.write("1")
+        print("Biofeedback mode: ", duration, " minutes")
+    elif mode == "Manual":
+        # ser.write(2)
+        print("Manual mode: ", duration, " minutes")
+    running.set(True)
+
     activityScreen = Frame(root, width=windowWidth, height=windowHeight)
     activityScreen.place(x=0, y=0)
     canvas = Canvas(activityScreen, width=windowWidth, height=windowHeight)
@@ -168,19 +189,30 @@ def makeActivityScreen(root):
     canvas.create_rectangle(
         389, 151, 770, 532, fill="white", outline="#797979", width=1)
     canvas.create_oval(501, 263, 660, 422, fill="blue")
-    #animateCircle(canvas)
+    # animateCircle(canvas)
     canvas.create_oval(432, 194, 727, 489, fill="",
                        outline="#D9001B", width=4, dash="_")
 
-    timeBar = Progressbar(activityScreen, length=661, mode="indeterminate")
+    maxM, maxS = divmod(duration*60, 60)
+    maxTime.set(f'{maxM:02d}:{maxS:02d}')
+    maxSeconds.set(duration*60)
+    elapsedS.set(0)
+
+    currentM, currentS = divmod(elapsedS.get(), 60)
+    currentTime.set(f'{currentM:02d}:{currentS:02d}')
+    root.after(1000, incrementTime)
+
+    timeBar = Progressbar(activityScreen, length=661, mode="determinate", variable=elapsedS, maximum=maxSeconds.get())
     timeBar.place(x=250, y=631)
-    timeBar.start()
-    currentTimeLabel = Label(activityScreen, text="4:25", style="ExtraSmall.TLabel")
+
+    currentTimeLabel = Label(
+        activityScreen, textvariable=currentTime, style="ExtraSmall.TLabel")
     currentTimeLabel.place(x=249, y=658)
-    maxTimeLabel = Label(activityScreen, text="10:00", style="ExtraSmall.TLabel")
+    maxTimeLabel = Label(activityScreen, textvariable=maxTime,
+                         style="ExtraSmall.TLabel")
     maxTimeLabel.place(x=870, y=658)
 
-    pauseButton = Button(activityScreen, image=pauseIcon)
+    pauseButton = Button(activityScreen, image=pauseIcon, command=lambda: pauseFunction(pauseButton))
     pauseButton.place(x=548, y=553, width=62, height=54)
 
     # Pressure bar section
@@ -211,10 +243,11 @@ def goToSetupScreen(root, mainMenu):
     makeSetupScreen(root)
 
 
-def goToActivityScreen(root, setupScreen, canvas):
+def goToActivityScreen(root, setupScreen, canvas, mode, duration):
+    duration = (duration+1) * 5
     setupScreen.place_forget()
     canvas.destroy()
-    makeActivityScreen(root)
+    makeActivityScreen(root, mode, duration)
 
 
 def returnToMenu(root, setupScreen, canvas):
@@ -224,16 +257,41 @@ def returnToMenu(root, setupScreen, canvas):
 
 
 def returnToSetupScreen(root, activityScreen, canvas):
+    elapsedS.set(-1)
+    running.set(False)
     activityScreen.place_forget()
     canvas.destroy()
     makeSetupScreen(root)
 
+
 def createBarLines(canvas, screen):
     start = 670
     for i in range(9):
-        canvas.create_line(151, start-i*68.125, 151+10, start-i*68, fill="#797979", width=2)
+        canvas.create_line(151, start-i*68.125, 151+10,
+                           start-i*68, fill="#797979", width=2)
         x = Label(screen, text=str(6.25*i), style="ExtraSmall.TLabel")
         x.place(x=164, y=start-11-i*68.125)
+
+
+def incrementTime():
+    timer = None
+    if elapsedS.get() < maxSeconds.get() and running.get():
+        elapsedS.set(elapsedS.get() + 1)
+        currentM, currentS = divmod(elapsedS.get(), 60)
+        currentTime.set(f'{currentM:02d}:{currentS:02d}')
+        timer = root.after(1000, incrementTime)
+    elif running.get() == False:
+        #root.after_cancel(timer)
+        pass
+
+def pauseFunction(button):
+    if running.get():
+        running.set(False)
+        button.configure(image=playIcon)
+    else:
+        running.set(True)
+        button.configure(image=pauseIcon)
+        incrementTime()
 
 # def animateCircle(canvas):
 #     size = 25
@@ -249,7 +307,6 @@ def createBarLines(canvas, screen):
 #         if size == 10:
 #             growing = True
 #     canvas.after(100, lambda: animateCircle(canvas))
-
 
 
 # def create_circle(x, y, r, canvas): #center coordinates, radius
