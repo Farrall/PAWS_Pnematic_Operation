@@ -289,31 +289,31 @@ def incrementTime():
 def pauseFunction(button, canvas, statusLabel):
     if running.get():
         running.set(False)
-        growing.set(False)
         button.configure(image=playIcon)
         canvas.itemconfigure("status", fill="#D9001B")
         statusLabel.configure(text="Status - Device Paused")
     else:
         running.set(True)
-        growing.set(True)
         button.configure(image=pauseIcon)
         canvas.itemconfigure("status", fill="#95F204")
         statusLabel.configure(text="Status - Device Running")
         incrementTime()
+        animateCircle(canvas)
 
 def animateCircle(canvas):
-    global ballSize
-    canvas.delete("ball")
-    canvas.create_oval(580-ballSize, 340-ballSize, 580+ballSize, 340+ballSize, fill="blue", tags=("ball"))
-    if growing.get():
-        ballSize = ballSize + 2
-        if ballSize > 120:
-            growing.set(False)
-    else:
-        ballSize = ballSize - 2
-        if ballSize < 40:
-            growing.set(True)
-    canvas.after(50, lambda: animateCircle(canvas))
+    if running.get():
+        global ballSize
+        canvas.delete("ball")
+        canvas.create_oval(580-ballSize, 340-ballSize, 580+ballSize, 340+ballSize, fill="blue", tags=("ball"))
+        if growing.get():
+            ballSize = ballSize + 2
+            if ballSize > 120:
+                growing.set(False)
+        else:
+            ballSize = ballSize - 2
+            if ballSize < 40:
+                growing.set(True)
+        canvas.after(50, lambda: animateCircle(canvas))
 
 
 # def create_circle(x, y, r, canvas): #center coordinates, radius
