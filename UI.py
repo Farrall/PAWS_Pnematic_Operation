@@ -21,6 +21,8 @@ currentTime = StringVar(root)
 maxSeconds = IntVar(root, value=0)
 elapsedS = IntVar(root, value=0)
 running = BooleanVar(root, value=False)
+ballSize = 25
+growing = BooleanVar(root, True)
 
 # Styles to change fonts / sizes
 style = Style()
@@ -188,8 +190,8 @@ def makeActivityScreen(root, mode, duration):
 
     canvas.create_rectangle(
         389, 151, 770, 532, fill="white", outline="#797979", width=1)
-    canvas.create_oval(501, 263, 660, 422, fill="blue")
-    # animateCircle(canvas)
+    canvas.create_oval(501, 263, 660, 422, fill="blue", tags="ball")
+    animateCircle(canvas)
     canvas.create_oval(432, 194, 727, 489, fill="",
                        outline="#D9001B", width=4, dash="_")
 
@@ -287,30 +289,31 @@ def incrementTime():
 def pauseFunction(button, canvas, statusLabel):
     if running.get():
         running.set(False)
+        growing.set(False)
         button.configure(image=playIcon)
         canvas.itemconfigure("status", fill="#D9001B")
         statusLabel.configure(text="Status - Device Paused")
     else:
         running.set(True)
+        growing.set(True)
         button.configure(image=pauseIcon)
         canvas.itemconfigure("status", fill="#95F204")
         statusLabel.configure(text="Status - Device Running")
         incrementTime()
 
-# def animateCircle(canvas):
-#     size = 25
-#     growing = True
-#     canvas.delete("ball")
-#     canvas.create_oval(580-size, 580-size, 580+size, 580+size, fill="blue", tags=("ball"))
-#     if growing:
-#         size += 1
-#         if size == 50:
-#             growing = False
-#     else:
-#         size -= 1
-#         if size == 10:
-#             growing = True
-#     canvas.after(100, lambda: animateCircle(canvas))
+def animateCircle(canvas):
+    global ballSize
+    canvas.delete("ball")
+    canvas.create_oval(580-ballSize, 340-ballSize, 580+ballSize, 340+ballSize, fill="blue", tags=("ball"))
+    if growing.get():
+        ballSize = ballSize + 2
+        if ballSize > 120:
+            growing.set(False)
+    else:
+        ballSize = ballSize - 2
+        if ballSize < 40:
+            growing.set(True)
+    canvas.after(50, lambda: animateCircle(canvas))
 
 
 # def create_circle(x, y, r, canvas): #center coordinates, radius
