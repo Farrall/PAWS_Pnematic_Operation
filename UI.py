@@ -232,7 +232,8 @@ def makeActivityScreen(root, mode, duration):
 
     # Grey bar representing pressure
     canvas.create_rectangle(83, 471, 83+64, 471+199,
-                            outline="#797979", width=1, fill="#D7D7D7")
+                            outline="#797979", width=1, fill="#D7D7D7", tags="pressureBar")
+    updatePressureBar(canvas)
 
     stopButton = Button(activityScreen, text="""STOP &
 RETURN""",
@@ -271,7 +272,7 @@ def createBarLines(canvas, screen):
     for i in range(9):
         canvas.create_line(151, start-i*68.125, 151+10,
                            start-i*68, fill="#797979", width=2)
-        x = Label(screen, text=str(6.25*i), style="ExtraSmall.TLabel")
+        x = Label(screen, text=str(0.25*i), style="ExtraSmall.TLabel")
         x.place(x=164, y=start-11-i*68.125)
 
 
@@ -314,6 +315,25 @@ def animateCircle(canvas):
             if ballSize < 40:
                 growing.set(True)
         canvas.after(50, lambda: animateCircle(canvas))
+
+def updatePressureBar(canvas):
+    global ballSize
+
+    if running.get():
+        canvas.delete("pressureBar")
+        canvas.create_rectangle(83, 550-ballSize, 83+64, 471+199,
+                        outline="#797979", width=1, fill="#D7D7D7", tags="pressureBar")
+        if growing.get():
+            ballSize = ballSize + 2
+            if ballSize > 120:
+                growing.set(False)
+        else:
+            ballSize = ballSize - 2
+            if ballSize < 40:
+                growing.set(True)
+        canvas.after(50, lambda: updatePressureBar(canvas))
+
+
 
 
 # def create_circle(x, y, r, canvas): #center coordinates, radius
