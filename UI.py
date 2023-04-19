@@ -7,12 +7,12 @@ import time
 windowWidth = 1158
 windowHeight = 740
 
-# ser = serial.Serial('COM3')
-# ser.flushInput()
+ser = serial.Serial('COM3')
+ser.flushInput()
 
 # Main menu window
 root = Tk()
-root.geometry("1158x740+350+150")
+root.geometry("1158x740+150+50")
 root.resizable(False, False)
 
 # global variables which need to get updated while running
@@ -21,8 +21,11 @@ currentTime = StringVar(root)
 maxSeconds = IntVar(root, value=0)
 elapsedS = IntVar(root, value=0)
 running = BooleanVar(root, value=False)
-ballSize = 25
-growing = BooleanVar(root, True)
+ballSize = 30
+growing = IntVar(root, 0)
+breath = IntVar(root, 0)
+pressure = IntVar(root, 0)
+solenoids = IntVar(root, 0)
 
 # Styles to change fonts / sizes
 style = Style()
@@ -34,19 +37,19 @@ style.configure("ExtraSmall.TLabel", font=("Arial", 13, "bold"))
 
 # Images for the screens
 chestImg = ImageTk.PhotoImage(Image.open(
-    "PAWS_Pnematic_Operation/assets/chest.png"))
+    "assets/chest.png"))
 biopacIcon = ImageTk.PhotoImage(Image.open(
-    "PAWS_Pnematic_Operation/assets/plugBlack.png"))
+    "assets/plugBlack.png"))
 airIcon = ImageTk.PhotoImage(Image.open(
-    "PAWS_Pnematic_Operation/assets/plugGrey.png"))
+    "assets/plugGrey.png"))
 strapIcon = ImageTk.PhotoImage(Image.open(
-    "PAWS_Pnematic_Operation/assets/blutoothBlack.png"))
+    "assets/blutoothBlack.png"))
 cogwheelIcon = ImageTk.PhotoImage(Image.open(
-    "PAWS_Pnematic_Operation/assets/cogwheel.png"))
+    "assets/cogwheel.png"))
 pauseIcon = ImageTk.PhotoImage(Image.open(
-    "PAWS_Pnematic_Operation/assets/pause.png"))
+    "assets/pause.png"))
 playIcon = ImageTk.PhotoImage(Image.open(
-    "PAWS_Pnematic_Operation/assets/play.png"))
+    "assets/play.png"))
 
 
 def makeMenuScreen(root):
@@ -167,12 +170,13 @@ def makeSetupScreen(root):
 
 def makeActivityScreen(root, mode, duration):
     if mode == "Standard":
-        # ser.write("1")
+        ser.write(b"1")
         print("Biofeedback mode: ", duration, " minutes")
     elif mode == "Manual":
-        # ser.write(2)
+        ser.write(b"2")
         print("Manual mode: ", duration, " minutes")
     running.set(True)
+    readBreathData()
 
     activityScreen = Frame(root, width=windowWidth, height=windowHeight)
     activityScreen.place(x=0, y=0)
@@ -204,7 +208,8 @@ def makeActivityScreen(root, mode, duration):
     currentTime.set(f'{currentM:02d}:{currentS:02d}')
     root.after(1000, incrementTime)
 
-    timeBar = Progressbar(activityScreen, length=661, mode="determinate", variable=elapsedS, maximum=maxSeconds.get())
+    timeBar = Progressbar(activityScreen, length=661, mode="determinate",
+                          variable=elapsedS, maximum=maxSeconds.get())
     timeBar.place(x=250, y=631)
 
     currentTimeLabel = Label(
@@ -214,15 +219,19 @@ def makeActivityScreen(root, mode, duration):
                          style="ExtraSmall.TLabel")
     maxTimeLabel.place(x=870, y=658)
 
-    pauseButton = Button(activityScreen, image=pauseIcon, command=lambda: pauseFunction(pauseButton, canvas, statusLabel))
+    pauseButton = Button(activityScreen, image=pauseIcon, command=lambda: pauseFunction(
+        pauseButton, canvas, statusLabel))
     pauseButton.place(x=548, y=553, width=62, height=54)
 
     # Pressure bar section
     canvas.create_rectangle(83, 125, 83+64, 125+545,
                             fill="white", outline="#797979", width=1)
     pressureLabel = Label(
-        activityScreen, text="Pressure - 10.5 (Psi)", style="SmallBold.TLabel")
+        activityScreen, text="Pressure -          (mbar)", style="SmallBold.TLabel")
     pressureLabel.place(x=21, y=690)
+    pressureValueLabel = Label(
+        activityScreen, textvariable=pressure, style="SmallBold.TLabel")
+    pressureValueLabel.place(x=145, y=690)
     createBarLines(canvas, activityScreen)
 
     canvas.create_line(84, 242, 84+63, 242, fill="#D9001B", width=3, dash="_")
@@ -284,8 +293,9 @@ def incrementTime():
         currentTime.set(f'{currentM:02d}:{currentS:02d}')
         timer = root.after(1000, incrementTime)
     elif running.get() == False:
-        #root.after_cancel(timer)
+        # root.after_cancel(timer)
         pass
+
 
 def pauseFunction(button, canvas, statusLabel):
     if running.get():
@@ -301,39 +311,68 @@ def pauseFunction(button, canvas, statusLabel):
         incrementTime()
         animateCircle(canvas)
 
+
 def animateCircle(canvas):
     if running.get():
         global ballSize
         canvas.delete("ball")
-        canvas.create_oval(580-ballSize, 340-ballSize, 580+ballSize, 340+ballSize, fill="blue", tags=("ball"))
-        if growing.get():
-            ballSize = ballSize + 2
-            if ballSize > 120:
-                growing.set(False)
-        else:
-            ballSize = ballSize - 2
-            if ballSize < 40:
-                growing.set(True)
+        canvas.create_oval(580-ballSize, 340-ballSize, 580 +
+                           ballSize, 340+ballSize, fill="blue", tags=("ball"))
+        if growing.get() == 1:
+            ballSize = ballSize + 0.4
+            # if ballSize > 120:
+            #     growing.set(False)
+        elif growing.get() == -1:
+            ballSize = ballSize - 0.5
+            # if ballSize < 40:
+            #     growing.set(True)
         canvas.after(50, lambda: animateCircle(canvas))
+
 
 def updatePressureBar(canvas):
     global ballSize
-
     if running.get():
         canvas.delete("pressureBar")
         canvas.create_rectangle(83, 550-ballSize, 83+64, 471+199,
-                        outline="#797979", width=1, fill="#D7D7D7", tags="pressureBar")
-        if growing.get():
-            ballSize = ballSize + 2
-            if ballSize > 120:
-                growing.set(False)
-        else:
-            ballSize = ballSize - 2
-            if ballSize < 40:
-                growing.set(True)
+                                outline="#797979", width=1, fill="#D7D7D7", tags="pressureBar")
+        if growing.get() == 1:
+            ballSize = ballSize + 0.4
+            # if ballSize > 120:
+            #     growing.set(False)
+        elif growing.get() == -1:
+            ballSize = ballSize - 0.5
+            # if ballSize < 40:
+            #     growing.set(True)
         canvas.after(50, lambda: updatePressureBar(canvas))
 
 
+def readBreathData():
+    if running.get():
+        try:
+            serial_data = ser.readline()
+            try:
+                decoded_string_data = str(serial_data[0:len(serial_data) - 2].decode("utf-8"))
+                string_array = decoded_string_data.split(' ')
+                number_array = [int(numeric_string) for numeric_string in string_array]
+
+                breath.set(number_array[0])
+                pressure.set(number_array[1])
+                solenoids.set(number_array[2])
+
+                if solenoids.get() == 1:
+                    growing.set(1)
+                elif solenoids.get() == -1:
+                    growing.set(-1)
+                elif solenoids.get() == 0:
+                    growing.set(0)
+
+                print(breath.get(), pressure.get(), solenoids.get())
+            except:
+                print("Error")
+        except:
+            print("Error")
+        root.after(50, lambda: readBreathData())
+        
 
 
 # def create_circle(x, y, r, canvas): #center coordinates, radius
@@ -342,7 +381,6 @@ def updatePressureBar(canvas):
 #     x1 = x + r
 #     y1 = y + r
 #     return canvas.create_oval(x0, y0, x1, y1)
-
 root.title("PAWS")
 makeMenuScreen(root)
 root.mainloop()
