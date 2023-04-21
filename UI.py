@@ -271,6 +271,7 @@ def returnToMenu(root, setupScreen, canvas):
 def returnToSetupScreen(root, activityScreen, canvas):
     elapsedS.set(-1)
     running.set(False)
+    ser.write(b"-1")
     activityScreen.place_forget()
     canvas.destroy()
     makeSetupScreen(root)
@@ -300,16 +301,19 @@ def incrementTime():
 def pauseFunction(button, canvas, statusLabel):
     if running.get():
         running.set(False)
+        ser.write(b"1")
         button.configure(image=playIcon)
         canvas.itemconfigure("status", fill="#D9001B")
         statusLabel.configure(text="Status - Device Paused")
     else:
         running.set(True)
+        ser.write(b"0")
         button.configure(image=pauseIcon)
         canvas.itemconfigure("status", fill="#95F204")
         statusLabel.configure(text="Status - Device Running")
         incrementTime()
         animateCircle(canvas)
+        readBreathData()
 
 
 def animateCircle(canvas):
@@ -372,6 +376,10 @@ def readBreathData():
         except:
             print("Error")
         root.after(50, lambda: readBreathData())
+
+def terminatePAWS():
+    ser.write(b"-1")
+    root.quit()
         
 
 
@@ -382,5 +390,6 @@ def readBreathData():
 #     y1 = y + r
 #     return canvas.create_oval(x0, y0, x1, y1)
 root.title("PAWS")
+root.protocol("WM_DELETE_WINDOW", terminatePAWS)
 makeMenuScreen(root)
 root.mainloop()

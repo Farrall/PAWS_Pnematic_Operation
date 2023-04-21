@@ -43,6 +43,7 @@ int pressure = 0;
 
 int cycle_switch = 0;
 int start = 0;
+int paused = 0;
 
 
 // Setup the essentials for your circuit to work. It runs first every time your circuit is powered with electricity.
@@ -170,7 +171,11 @@ void Manual_control(){
 
 void Biofeedback(){
   while (c == 'q') {
-    // c = Serial.read();
+    if(Serial.available()){
+      paused = Serial.readString().toInt();
+    }
+     //c = Serial.read();
+     if(paused == 0){
       while(i<20){
           BreatheArray[i] = analogRead(BreathingSensor);
           PressureArray[i] = analogRead(PressureSensor);
@@ -199,6 +204,15 @@ void Biofeedback(){
                 Serial.println("0");
                 Hold();
             }
+     }
+     else if(paused == 1){
+       Hold();
+       delay(50);
+     }
+     else if(paused == -1){
+       Hold();
+       loop();
+     }
     }
 }
 
