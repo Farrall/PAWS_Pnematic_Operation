@@ -43,7 +43,8 @@ int pressure = 0;
 
 int cycle_switch = 0;
 int start = 0;
-int paused = 0;
+int paused = 0; // 0 is paused, 1 is playing
+int action = 5; // 6 is hold, 5 is inflate, 7 is deflate
 
 
 // Setup the essentials for your circuit to work. It runs first every time your circuit is powered with electricity.
@@ -70,8 +71,7 @@ if (start == 1){
   Biofeedback();
 }
 if (start == 2){
-  Inialize();
-  start = 0;
+  Manual();
 }
 
 }
@@ -214,6 +214,69 @@ void Biofeedback(){
        loop();
      }
     }
+}
+
+void Manual(){
+  while(c == 'q'){
+    if(Serial.available()){
+      //paused = Serial.readString().toInt();
+    }
+    if(paused == 0){
+      if(Serial.available()){
+        // actions are 5 for inflate, 6 for hold, 7 for deflate
+        action = Serial.readString().toInt();
+      }
+        if(action == 5){
+          while(i<20){
+            PressureArray[i] = analogRead(PressureSensor);
+            PressureTotal = PressureTotal + PressureArray[i];
+            i++;
+            delay(5);
+          }
+          i=0;
+
+          PressureVal = PressureTotal/20;
+          PressureTotal=0;
+
+          Serial.print(PressureVal); 
+          Serial.print(" ");
+
+          Serial.println("1");
+          Inflate();
+        }
+        else if(action == 7){
+          while(i<20){
+            PressureArray[i] = analogRead(PressureSensor);
+            PressureTotal = PressureTotal + PressureArray[i];
+            i++;
+            delay(5);
+          }
+          i=0;
+
+          PressureVal = PressureTotal/20;
+          PressureTotal=0;
+
+          Serial.print(PressureVal); 
+          Serial.print(" ");
+
+          Serial.println("-1");
+          Deflate();
+        }
+        else if(action == 6){
+          Serial.println("0");
+          Hold();
+        }
+      
+    }
+    else if(paused == 1){
+      Hold();
+      delay(50);
+    }
+    else if(paused == -1){
+      Hold();
+      loop();
+    }
+  }
 }
 
 void Cycle(){

@@ -21,11 +21,12 @@ currentTime = StringVar(root)
 maxSeconds = IntVar(root, value=0)
 elapsedS = IntVar(root, value=0)
 running = BooleanVar(root, value=False)
-ballSize = 30
+ballSize = 60
 growing = IntVar(root, 0)
 breath = IntVar(root, 0)
 pressure = IntVar(root, 0)
 solenoids = IntVar(root, 0)
+globalMode = StringVar(root, "")
 
 # Styles to change fonts / sizes
 style = Style()
@@ -170,9 +171,11 @@ def makeSetupScreen(root):
 
 def makeActivityScreen(root, mode, duration):
     if mode == "Standard":
+        globalMode.set("Standard")
         ser.write(b"1")
         print("Biofeedback mode: ", duration, " minutes")
     elif mode == "Manual":
+        globalMode.set("Manual")
         ser.write(b"2")
         print("Manual mode: ", duration, " minutes")
     running.set(True)
@@ -327,7 +330,7 @@ def animateCircle(canvas):
             # if ballSize > 120:
             #     growing.set(False)
         elif growing.get() == -1:
-            ballSize = ballSize - 0.5
+            ballSize = ballSize - 0.4
             # if ballSize < 40:
             #     growing.set(True)
         canvas.after(50, lambda: animateCircle(canvas))
@@ -344,20 +347,22 @@ def updatePressureBar(canvas):
             # if ballSize > 120:
             #     growing.set(False)
         elif growing.get() == -1:
-            ballSize = ballSize - 0.5
+            ballSize = ballSize - 0.4
             # if ballSize < 40:
             #     growing.set(True)
         canvas.after(50, lambda: updatePressureBar(canvas))
 
 
 def readBreathData():
-    if running.get():
+    if running.get() and globalMode.get() == "Standard":
         try:
             serial_data = ser.readline()
             try:
-                decoded_string_data = str(serial_data[0:len(serial_data) - 2].decode("utf-8"))
+                decoded_string_data = str(
+                    serial_data[0:len(serial_data) - 2].decode("utf-8"))
                 string_array = decoded_string_data.split(' ')
-                number_array = [int(numeric_string) for numeric_string in string_array]
+                number_array = [int(numeric_string)
+                                for numeric_string in string_array]
 
                 breath.set(number_array[0])
                 pressure.set(number_array[1])
@@ -377,19 +382,42 @@ def readBreathData():
             print("Error")
         root.after(50, lambda: readBreathData())
 
+
 def terminatePAWS():
     ser.write(b"-1")
     root.quit()
-        
 
 
-# def create_circle(x, y, r, canvas): #center coordinates, radius
-#     x0 = x - r
-#     y0 = y - r
-#     x1 = x + r
-#     y1 = y + r
-#     return canvas.create_oval(x0, y0, x1, y1)
+def upKeyPress(event):
+    if globalMode.get() == "Manual":
+        ser.write(b"5")
+        print("UP")
+
+
+def upKeyRelease(event):
+    if globalMode.get() == "Manual":
+        #ser.write(b"6")
+        print("UP released")
+
+
+def downKeyPress(event):
+    if globalMode.get() == "Manual":
+        ser.write(b"7")
+        print("DOWN")
+
+def downKeyRelease(event):
+    if globalMode.get() == "Manual":
+        #ser.write(b"6")
+        print("DOWN released")
+
+
 root.title("PAWS")
 root.protocol("WM_DELETE_WINDOW", terminatePAWS)
+root.bind("<KeyPress-Up>", upKeyPress)
+root.bind("<KeyRelease-Up>", upKeyRelease)
+root.bind("<KeyPress-Down>", downKeyPress)
+root.bind("<KeyRelease-Down>", downKeyRelease)
+root.focus_set()
+
 makeMenuScreen(root)
 root.mainloop()
