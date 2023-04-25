@@ -31,6 +31,7 @@ int average = 0;
 int BreatheVal = 0;
 int Prev_BreatheVal;
 int PressureVal;
+float ballSize = 60.0;
 
 //manual control
 int manual_control;
@@ -44,7 +45,7 @@ int pressure = 0;
 int cycle_switch = 0;
 int start = 0;
 int paused = 0; // 0 is paused, 1 is playing
-int action = 5; // 6 is hold, 5 is inflate, 7 is deflate
+int action = 6; // 6 is hold, 5 is inflate, 7 is deflate
 
 
 // Setup the essentials for your circuit to work. It runs first every time your circuit is powered with electricity.
@@ -191,15 +192,17 @@ void Biofeedback(){
 
       Serial.print(BreatheVal); 
       Serial.print(" ");
-      Serial.print(PressureVal); 
+      Serial.print(int(ballSize * 10)); 
       Serial.print(" ");
       
-              if (BreatheVal > Prev_BreatheVal+1) {
+              if (BreatheVal > Prev_BreatheVal+1 && ballSize <= 80.0) {
                 Serial.println("1");
                 Inflate();
-            } else if (BreatheVal < Prev_BreatheVal-1) {
+                ballSize += 0.4;
+            } else if (BreatheVal < Prev_BreatheVal-1 && ballSize >= 40.0) {
                 Serial.println("-1");
                 Deflate();
+                ballSize -= 0.4;
             } else if ((BreatheVal <= Prev_BreatheVal+1) && (BreatheVal >= Prev_BreatheVal-1)) {
                 Serial.println("0");
                 Hold();
@@ -219,60 +222,55 @@ void Biofeedback(){
 void Manual(){
   while(c == 'q'){
     if(Serial.available()){
-      //paused = Serial.readString().toInt();
+      // actions are 5 for inflate, 6 for hold, 7 for deflate, 0 for pausing
+      action = Serial.readString().toInt();
     }
-    if(paused == 0){
-      if(Serial.available()){
-        // actions are 5 for inflate, 6 for hold, 7 for deflate
-        action = Serial.readString().toInt();
-      }
-        if(action == 5){
-          while(i<20){
-            PressureArray[i] = analogRead(PressureSensor);
-            PressureTotal = PressureTotal + PressureArray[i];
-            i++;
-            delay(5);
-          }
-          i=0;
+    if(action != 0){
+        if(action == 5 && ballSize <= 80.0){
+          PressureVal = analogRead(PressureSensor);
 
-          PressureVal = PressureTotal/20;
-          PressureTotal=0;
+          Serial.print(int(ballSize * 10));
+          Serial.print(" ");
 
           Serial.print(PressureVal); 
           Serial.print(" ");
 
           Serial.println("1");
           Inflate();
+          ballSize += 0.4;
         }
-        else if(action == 7){
-          while(i<20){
-            PressureArray[i] = analogRead(PressureSensor);
-            PressureTotal = PressureTotal + PressureArray[i];
-            i++;
-            delay(5);
-          }
-          i=0;
+        else if(action == 7 && ballSize >= 40.0){
+          PressureVal = analogRead(PressureSensor);
 
-          PressureVal = PressureTotal/20;
-          PressureTotal=0;
+          Serial.print(int(ballSize * 10));
+          Serial.print(" ");
 
           Serial.print(PressureVal); 
           Serial.print(" ");
 
           Serial.println("-1");
           Deflate();
+          ballSize -= 0.4;
         }
         else if(action == 6){
+          PressureVal = analogRead(PressureSensor);
+
+          Serial.print(int(ballSize * 10));
+          Serial.print(" ");
+
+          Serial.print(PressureVal); 
+          Serial.print(" ");
+
           Serial.println("0");
           Hold();
         }
       
     }
-    else if(paused == 1){
+    else if(action == 0){
       Hold();
       delay(50);
     }
-    else if(paused == -1){
+    else if(action == -1){
       Hold();
       loop();
     }

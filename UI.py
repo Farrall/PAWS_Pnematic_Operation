@@ -327,12 +327,11 @@ def animateCircle(canvas):
                            ballSize, 340+ballSize, fill="blue", tags=("ball"))
         if growing.get() == 1:
             ballSize = ballSize + 0.4
-            # if ballSize > 120:
-            #     growing.set(False)
+            print(ballSize)
+
         elif growing.get() == -1:
             ballSize = ballSize - 0.4
-            # if ballSize < 40:
-            #     growing.set(True)
+
         canvas.after(50, lambda: animateCircle(canvas))
 
 
@@ -344,12 +343,11 @@ def updatePressureBar(canvas):
                                 outline="#797979", width=1, fill="#D7D7D7", tags="pressureBar")
         if growing.get() == 1:
             ballSize = ballSize + 0.4
-            # if ballSize > 120:
-            #     growing.set(False)
+            print(ballSize)
+
         elif growing.get() == -1:
             ballSize = ballSize - 0.4
-            # if ballSize < 40:
-            #     growing.set(True)
+
         canvas.after(50, lambda: updatePressureBar(canvas))
 
 
@@ -365,7 +363,7 @@ def readBreathData():
                                 for numeric_string in string_array]
 
                 breath.set(number_array[0])
-                pressure.set(number_array[1])
+                pressure.set(number_array[1] / 10)
                 solenoids.set(number_array[2])
 
                 if solenoids.get() == 1:
@@ -389,26 +387,30 @@ def terminatePAWS():
 
 
 def upKeyPress(event):
-    if globalMode.get() == "Manual":
+    if globalMode.get() == "Manual" and growing.get() == 0:
         ser.write(b"5")
         print("UP")
+        growing.set(1)
 
 
 def upKeyRelease(event):
-    if globalMode.get() == "Manual":
-        #ser.write(b"6")
+    if globalMode.get() == "Manual" and growing.get() == 1:
+        ser.write(b"6")
         print("UP released")
+        growing.set(0)
 
 
 def downKeyPress(event):
-    if globalMode.get() == "Manual":
+    if globalMode.get() == "Manual" and growing.get() == 0:
         ser.write(b"7")
         print("DOWN")
+        growing.set(-1)
 
 def downKeyRelease(event):
-    if globalMode.get() == "Manual":
-        #ser.write(b"6")
+    if globalMode.get() == "Manual" and growing.get() == -1:
+        ser.write(b"6")
         print("DOWN released")
+        growing.set(0)
 
 
 root.title("PAWS")
