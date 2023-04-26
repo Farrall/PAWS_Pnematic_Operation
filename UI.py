@@ -43,6 +43,9 @@ biopacIcon = ImageTk.PhotoImage(Image.open(
     "assets/plugBlack.png"))
 airIcon = ImageTk.PhotoImage(Image.open(
     "assets/plugGrey.png"))
+airIconOn = ImageTk.PhotoImage(Image.open(
+    "assets/plugBlack.png"
+))
 strapIcon = ImageTk.PhotoImage(Image.open(
     "assets/blutoothBlack.png"))
 cogwheelIcon = ImageTk.PhotoImage(Image.open(
@@ -82,7 +85,7 @@ def makeSetupScreen(root):
     setupLabel = Label(setupScreen, text="Setup PAWS")
     setupLabel.place(x=464, y=31)
 
-    # Device status column
+    # Device status column - RED: #D9001B | GREEN: #95F204
     deviceStatusLabel = Label(setupScreen, text="Device Status")
     deviceStatusLabel.place(x=42, y=81)
 
@@ -95,10 +98,10 @@ def makeSetupScreen(root):
 
     airLabel = Label(setupScreen, text="Air Compressor", style="Small.TLabel")
     airLabel.place(x=42, y=214)
-    airIconContainer = Label(setupScreen, image=airIcon)
+    airIconContainer = Label(setupScreen, image=airIconOn)
     airIconContainer.place(x=250, y=211)
     canvas.create_oval(307, 214, 337, 244, outline="#797979",
-                       fill="#D9001B", width=1)
+                       fill="#95F204", width=1)
 
     strapLabel = Label(setupScreen, text="Biofeedback Strap",
                        style="Small.TLabel")
@@ -209,7 +212,7 @@ def makeActivityScreen(root, mode, duration):
 
     currentM, currentS = divmod(elapsedS.get(), 60)
     currentTime.set(f'{currentM:02d}:{currentS:02d}')
-    root.after(1000, incrementTime)
+    
 
     timeBar = Progressbar(activityScreen, length=661, mode="determinate",
                           variable=elapsedS, maximum=maxSeconds.get())
@@ -226,6 +229,8 @@ def makeActivityScreen(root, mode, duration):
         pauseButton, canvas, statusLabel))
     pauseButton.place(x=548, y=553, width=62, height=54)
 
+    root.after(1000, incrementTime, canvas, statusLabel, pauseButton)
+
     # Pressure bar section
     canvas.create_rectangle(83, 125, 83+64, 125+545,
                             fill="white", outline="#797979", width=1)
@@ -237,13 +242,13 @@ def makeActivityScreen(root, mode, duration):
     pressureValueLabel.place(x=145, y=690)
     createBarLines(canvas, activityScreen)
 
-    canvas.create_line(84, 242, 84+63, 242, fill="#D9001B", width=3, dash="_")
+    canvas.create_line(84, 170, 84+63, 170, fill="#D9001B", width=3, dash="_")
     highPressureLabel = Label(
         activityScreen, text="Too high", style="ExtraSmall.TLabel", foreground="#D9001B")
-    highPressureLabel.place(x=151, y=230)
+    highPressureLabel.place(x=151, y=160)
 
     # Grey bar representing pressure
-    canvas.create_rectangle(83, 471, 83+64, 471+199,
+    canvas.create_rectangle(83, 100, 83+64, 100+199,
                             outline="#797979", width=1, fill="#D7D7D7", tags="pressureBar")
     updatePressureBar(canvas)
 
@@ -285,20 +290,23 @@ def createBarLines(canvas, screen):
     for i in range(9):
         canvas.create_line(151, start-i*68.125, 151+10,
                            start-i*68, fill="#797979", width=2)
-        x = Label(screen, text=str(0.25*i), style="ExtraSmall.TLabel")
+        x = Label(screen, text=str(30*i), style="ExtraSmall.TLabel")
         x.place(x=164, y=start-11-i*68.125)
 
 
-def incrementTime():
+def incrementTime(canvas, statusLabel, button):
     timer = None
     if elapsedS.get() < maxSeconds.get() and running.get():
         elapsedS.set(elapsedS.get() + 1)
         currentM, currentS = divmod(elapsedS.get(), 60)
         currentTime.set(f'{currentM:02d}:{currentS:02d}')
-        timer = root.after(1000, incrementTime)
-    elif running.get() == False:
-        # root.after_cancel(timer)
-        pass
+        timer = root.after(1000, incrementTime, canvas, statusLabel, button)
+    elif elapsedS.get() >= maxSeconds.get() and running.get():
+        running.set(False)
+        ser.write(b"1")
+        canvas.itemconfigure("status", fill="#95F204")
+        statusLabel.configure(text="Status - Session Done")
+        button.place_forget()
 
 
 def pauseFunction(button, canvas, statusLabel):
@@ -327,7 +335,6 @@ def animateCircle(canvas):
                            ballSize, 340+ballSize, fill="blue", tags=("ball"))
         if growing.get() == 1:
             ballSize = ballSize + 0.4
-            print(ballSize)
 
         elif growing.get() == -1:
             ballSize = ballSize - 0.4
@@ -336,17 +343,11 @@ def animateCircle(canvas):
 
 
 def updatePressureBar(canvas):
-    global ballSize
+    diff = pressure.get() - 195
     if running.get():
         canvas.delete("pressureBar")
-        canvas.create_rectangle(83, 550-ballSize, 83+64, 471+199,
+        canvas.create_rectangle(83, 220-diff, 83+64, 471+199,
                                 outline="#797979", width=1, fill="#D7D7D7", tags="pressureBar")
-        if growing.get() == 1:
-            ballSize = ballSize + 0.4
-            print(ballSize)
-
-        elif growing.get() == -1:
-            ballSize = ballSize - 0.4
 
         canvas.after(50, lambda: updatePressureBar(canvas))
 
@@ -363,7 +364,7 @@ def readBreathData():
                                 for numeric_string in string_array]
 
                 breath.set(number_array[0])
-                pressure.set(number_array[1] / 10)
+                pressure.set(number_array[1])
                 solenoids.set(number_array[2])
 
                 if solenoids.get() == 1:
@@ -372,6 +373,26 @@ def readBreathData():
                     growing.set(-1)
                 elif solenoids.get() == 0:
                     growing.set(0)
+
+                print(breath.get(), pressure.get(), solenoids.get())
+            except:
+                print("Error")
+        except:
+            print("Error")
+        root.after(50, lambda: readBreathData())
+    elif running.get() and globalMode.get() == "Manual":
+        try:
+            serial_data = ser.readline()
+            try:
+                decoded_string_data = str(
+                    serial_data[0:len(serial_data) - 2].decode("utf-8"))
+                string_array = decoded_string_data.split(' ')
+                number_array = [int(numeric_string)
+                                for numeric_string in string_array]
+
+                breath.set(number_array[0])
+                pressure.set(number_array[1])
+                solenoids.set(number_array[2])
 
                 print(breath.get(), pressure.get(), solenoids.get())
             except:

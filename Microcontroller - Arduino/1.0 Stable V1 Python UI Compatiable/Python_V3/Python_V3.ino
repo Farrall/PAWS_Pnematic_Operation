@@ -77,68 +77,68 @@ if (start == 2){
 
 }
 
-void Menu() {
-    Menu_banner();
-    for (;;) {
-        switch (Serial.read()) {
-            case '1': Inialize(); Menu_banner(); break;
-            case '2': Manual_control(); break;
-            case '3': {
-              c = 'q';
-              Biofeedback(); break;
-            }
-            case '4': {
-               c = 'q';
-              cycle_switch = 1;
-              Cycle(); break;
-            }
-            case '5': {
-              Hold(); 
-              Serial.println(F("Solenoids are offline"));
-              Menu_banner();
-              break;}
-            case '9': return;
-            default: continue;  // includes the case 'no input'
-        }
-    }
-}
+// void Menu() {
+//     Menu_banner();
+//     for (;;) {
+//         switch (Serial.read()) {
+//             case '1': Inialize(); Menu_banner(); break;
+//             case '2': Manual_control(); break;
+//             case '3': {
+//               c = 'q';
+//               Biofeedback(); break;
+//             }
+//             case '4': {
+//                c = 'q';
+//               cycle_switch = 1;
+//               Cycle(); break;
+//             }
+//             case '5': {
+//               Hold(); 
+//               Serial.println(F("Solenoids are offline"));
+//               Menu_banner();
+//               break;}
+//             case '9': return;
+//             default: continue;  // includes the case 'no input'
+//         }
+//     }
+// }
 
-void Menu_banner(){
-  Serial.println(F("\nWhat would you like to test?"));
-  Serial.println(F("(1) Inialize #1"));
-  Serial.println(F("(2) Manual Control #2"));
-  Serial.println(F("(3) Biofeedback #3"));
-  Serial.println(F("(4) Cycle #4"));
-  Serial.println(F("(5) System Off #5"));
-  Serial.println(F("(menu) send anything else or press on board reset button\n"));
-}
+// void Menu_banner(){
+//   Serial.println(F("\nWhat would you like to test?"));
+//   Serial.println(F("(1) Inialize #1"));
+//   Serial.println(F("(2) Manual Control #2"));
+//   Serial.println(F("(3) Biofeedback #3"));
+//   Serial.println(F("(4) Cycle #4"));
+//   Serial.println(F("(5) System Off #5"));
+//   Serial.println(F("(menu) send anything else or press on board reset button\n"));
+// }
 
-void Inialize(){
-  Deflate();
-  delay(30000);
-  Inflate();
-  delay(20000);
-  Hold();
-  return;
-}
+// void Inialize(){
+//   Deflate();
+//   delay(30000);
+//   Inflate();
+//   delay(20000);
+//   Hold();
+//   return;
+// }
 
-void Manual_control(){
-  Serial.println(F("(1) Inflate #1"));
-  Serial.println(F("(2) Deflate #2"));
-  Serial.println(F("(3) Hold #3"));
-  Serial.println(F("(4) Return #4"));
-  for (;;) {
-    // pressure = analogRead(PressureSensor);
-    // Serial.println(pressure);
-        switch (Serial.read()) {
-            case '1': Inflate(); break;
-            case '2': Deflate(); break;
-            case '3': Hold(); break;
-            case '4': Hold(); Menu(); break;
-            default: continue;  // includes the case 'no input'
-            }
-          }
-}
+// void Manual_control(){
+//   Serial.println(F("(1) Inflate #1"));
+//   Serial.println(F("(2) Deflate #2"));
+//   Serial.println(F("(3) Hold #3"));
+//   Serial.println(F("(4) Return #4"));
+//   for (;;) {
+//     // pressure = analogRead(PressureSensor);
+//     // Serial.println(pressure);
+//         switch (Serial.read()) {
+//             case '1': Inflate(); break;
+//             case '2': Deflate(); break;
+//             case '3': Hold(); break;
+//             case '4': Hold(); Menu(); break;
+//             default: continue;  // includes the case 'no input'
+//             }
+//           }
+// }
 
 
 // void Biofeedback(){
@@ -192,7 +192,7 @@ void Biofeedback(){
 
       Serial.print(BreatheVal); 
       Serial.print(" ");
-      Serial.print(int(ballSize * 10)); 
+      Serial.print(PressureVal); 
       Serial.print(" ");
       
               if (BreatheVal > Prev_BreatheVal+1 && ballSize <= 80.0) {
@@ -277,21 +277,21 @@ void Manual(){
   }
 }
 
-void Cycle(){
-while (c == 'q') {
-    while(i<60){
-      i++;
-    } 
-    i=0;
-    if (cycle_switch == 1){
-      Inflate();
-      cycle_switch = -1;
-    } else if (cycle_switch == -1){
-      Deflate();
-      cycle_switch = 1;
-    }
-  }
-}
+// void Cycle(){
+// while (c == 'q') {
+//     while(i<60){
+//       i++;
+//     } 
+//     i=0;
+//     if (cycle_switch == 1){
+//       Inflate();
+//       cycle_switch = -1;
+//     } else if (cycle_switch == -1){
+//       Deflate();
+//       cycle_switch = 1;
+//     }
+//   }
+// }
 
 void Inflate(){
   solenoidValve2_2.off();
