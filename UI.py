@@ -3,6 +3,8 @@ from tkinter.ttk import *
 from PIL import Image, ImageTk
 import serial
 import time
+import webbrowser
+
 
 windowWidth = 1158
 windowHeight = 740
@@ -69,7 +71,7 @@ def makeMenuScreen(root):
                          command=lambda: goToSetupScreen(root, mainMenu))
     startButton.place(x=466, y=247, width=227, height=65)
 
-    manualButton = Button(mainMenu, text="MANUAL")
+    manualButton = Button(mainMenu, text="MANUAL", command=lambda: webbrowser.open_new(r'PAWS_Manual.pdf'))
     manualButton.place(x=466, y=353, width=227, height=65)
 
     exitButton = Button(mainMenu, text="EXIT", command=lambda: root.destroy())
